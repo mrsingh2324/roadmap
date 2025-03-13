@@ -14,6 +14,7 @@ export const routes = pgTable("routes", {
   source: text("source").notNull(),
   destination: text("destination").notNull(),
   transportOptions: json("transport_options").$type<TransportOption[]>().notNull(),
+  rideHailingOptions: json("ride_hailing_options").$type<RideHailingOption[]>().notNull(),
   timestamp: timestamp("timestamp").notNull().defaultNow(),
 });
 
@@ -27,10 +28,17 @@ export const insertLocationSchema = createInsertSchema(locations);
 export const insertRouteSchema = createInsertSchema(routes);
 
 export type TransportOption = {
-  type: 'bus' | 'metro' | 'train' | 'cab';
+  type: 'bus' | 'metro' | 'train';
   duration: number; // in minutes
   fare: number;
   route: string[];
+};
+
+export type RideHailingOption = {
+  type: 'bike' | 'auto' | 'car';
+  provider: 'uber' | 'rapido' | 'ola';
+  duration: number;
+  fare: number;
 };
 
 export const searchRouteSchema = z.object({

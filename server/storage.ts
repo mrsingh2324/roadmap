@@ -1,4 +1,4 @@
-import { locations, routes, type Location, type InsertLocation, type Route, type InsertRoute, type TransportOption } from "@shared/schema";
+import { locations, routes, type Location, type InsertLocation, type Route, type InsertRoute, type TransportOption, type RideHailingOption } from "@shared/schema";
 
 export interface IStorage {
   searchLocations(query: string): Promise<Location[]>;
@@ -18,7 +18,6 @@ export class MemStorage implements IStorage {
     this.currentLocationId = 1;
     this.currentRouteId = 1;
 
-    // Add some mock locations
     this.addMockData();
   }
 
@@ -29,32 +28,75 @@ export class MemStorage implements IStorage {
     );
   }
 
+  private calculateDistance(source: Location, destination: Location): number {
+    // Simple mock distance calculation (in km)
+    const lat1 = parseFloat(source.lat.toString());
+    const lon1 = parseFloat(source.lng.toString());
+    const lat2 = parseFloat(destination.lat.toString());
+    const lon2 = parseFloat(destination.lng.toString());
+
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
   async findRoutes(source: string, destination: string): Promise<Route | undefined> {
-    // Generate mock transport options
+    // Mock distance calculation using the first location that matches the names
+    const sourceLocation = Array.from(this.locations.values()).find(l => l.name.includes(source));
+    const destLocation = Array.from(this.locations.values()).find(l => l.name.includes(destination));
+
+    if (!sourceLocation || !destLocation) return undefined;
+
+    const distance = this.calculateDistance(sourceLocation, destLocation);
+
+    // Generate mock transport options with realistic fares based on distance
     const transportOptions: TransportOption[] = [
       {
         type: 'bus',
-        duration: 60,
-        fare: 30,
+        duration: Math.round(distance * 4), // 15 km/h average speed
+        fare: Math.round(distance * 2), // ₹2 per km
         route: [source, 'Bus Stop A', 'Bus Stop B', destination]
       },
       {
         type: 'metro',
-        duration: 45,
-        fare: 50,
+        duration: Math.round(distance * 2), // 30 km/h average speed
+        fare: Math.round(10 + (distance * 2.5)), // Base fare ₹10 + ₹2.5 per km
         route: [source, 'Metro Station 1', 'Metro Station 2', destination]
       },
       {
         type: 'train',
-        duration: 90,
-        fare: 100,
+        duration: Math.round(distance * 1.5), // 40 km/h average speed
+        fare: Math.round(20 + (distance * 1.5)), // Base fare ₹20 + ₹1.5 per km
         route: [source, 'Railway Station 1', 'Railway Station 2', destination]
+      }
+    ];
+
+    // Generate mock ride-hailing options
+    const rideHailingOptions: RideHailingOption[] = [
+      {
+        type: 'bike',
+        provider: 'rapido',
+        duration: Math.round(distance * 2), // 30 km/h average speed
+        fare: Math.round(20 + (distance * 6)) // Base fare ₹20 + ₹6 per km
       },
       {
-        type: 'cab',
-        duration: 40,
-        fare: 400,
-        route: [source, destination]
+        type: 'auto',
+        provider: 'uber',
+        duration: Math.round(distance * 2.5), // 24 km/h average speed
+        fare: Math.round(30 + (distance * 11)) // Base fare ₹30 + ₹11 per km
+      },
+      {
+        type: 'car',
+        provider: 'uber',
+        duration: Math.round(distance * 2), // 30 km/h average speed
+        fare: Math.round(50 + (distance * 14)) // Base fare ₹50 + ₹14 per km
       }
     ];
 
@@ -63,6 +105,7 @@ export class MemStorage implements IStorage {
       source,
       destination,
       transportOptions,
+      rideHailingOptions,
       timestamp: new Date()
     };
 
