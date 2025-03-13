@@ -1,3 +1,6 @@
+/* Leaflet Map Styles */
+@import 'leaflet/dist/leaflet.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,9 +14,6 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
-
-/* Leaflet Map Styles */
-@import 'leaflet/dist/leaflet.css';
 
 .leaflet-container {
   width: 100%;
