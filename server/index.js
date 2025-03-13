@@ -11,10 +11,26 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Debug logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/route-finder')
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/route-finder';
+console.log('Attempting to connect to MongoDB...');
+
+mongoose.connect(mongoURI)
+  .then(() => {
+    console.log('Successfully connected to MongoDB');
+    // Initialize database with sample data
+    require('./initDb');
+  })
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  });
 
 // Routes
 const routeRoutes = require('./routes/routes');
@@ -22,6 +38,12 @@ const locationRoutes = require('./routes/locations');
 
 app.use('/api/routes', routeRoutes);
 app.use('/api/locations', locationRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ message: 'Internal server error', error: err.message });
+});
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
